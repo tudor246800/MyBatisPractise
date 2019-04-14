@@ -1,1 +1,1 @@
-# MyBatisPractise
+https://www.websequencediagrams.com/#
