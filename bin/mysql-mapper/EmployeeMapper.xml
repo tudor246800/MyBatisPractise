@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neal.mybatispractise.dao.mapper.EmployeeMapper">
+	<cache eviction="LRU" size="1024"></cache>
+	<select id="getEmployeeById" resultType="Employee">
+		select * from tb1_employee where id = #{id}
+	</select>
+	
+	<select id="getEmpsPage" resultType="com.neal.mybatispractise.entity.Employee" useCache="false">
+		select * from tb1_employee
+	</select>
+	
+	<select id="getEmployeeByIdAndName" resultType="Employee">
+		select * from tb1_employee where id = #{id} and lastName =#{lastName}
+	</select>
+	
+	<select id="getEmployeeByMap" resultType="Employee">
+		select * from ${tableName} where id = #{id} and lastName =#{lastName}
+	</select>
+	
+	<select id="getEmployeeByIdToMap" resultType="map">
+		select * from tb1_employee where id = #{id}
+	</select>
+	
+	<select id="getEmployeeByNameFuzzy" resultType="Employee">
+		<bind name="_lastName" value="'%'+lastName+'%'"/>
+		select * from tb1_employee where lastName like #{_lastName}
+	</select>
+	
+	<select id="getEmployeeByNameFuzzyToMap" resultType="Employee">
+		select * from tb1_employee where lastName like #{lastName}
+	</select>
+	
+	<resultMap type="com.neal.mybatispractise.entity.Employee" id="myEmployee">
+		<id column="id" property="id"/>
+		<result column="lastName" property="lastName"/>
+		<result column="email" property="email"/>
+		<result column="gender" property="gender"/>
+		<association property="dept" javaType="com.neal.mybatispractise.entity.Department" >
+			<id column="deptId" property="id"/>
+			<result column="deptName" property="deptName"/>
+		</association>
+	</resultMap>
+	<select id="getEmployeeByIdResultMap" resultMap="myEmployee">
+		select emp.id id,
+			   emp.lastName lastName,
+			   emp.email email,
+			   emp.gender gender,
+			   dept.id deptId,
+			   dept.deptName deptName
+			   from tb1_employee emp, dept dept  where emp.id=dept.id and emp.id = #{id}
+	</select>
+	
+	<select id="getEmpDynamic" resultType="com.neal.mybatispractise.entity.Employee">
+		select * from tb1_employee where 1=1 
+		<if test="id != null">
+			and id = #{id}
+		</if>
+		<choose>
+			<when test="lastName != null and lastName.trim() !=''">
+				and lastName like #{lastName}
+			</when>
+			<when test="gender == 0 or gender == 1">
+				and gender = #{gender}
+			</when>
+		</choose>
+	</select>
+	
+	<select id="getEmpDynamicForeach" resultType="com.neal.mybatispractise.entity.Employee">
+		select * from tb1_employee  where 1=1
+		<foreach collection="ids" item="itemId" open="and id in (" close=")" separator=",">
+			#{itemId}
+		</foreach>
+	</select>
+
+	<insert id="addEmployee" parameterType="Employee" useGeneratedKeys="true" keyProperty="id" flushCache="true">
+		insert tb1_employee(lastName, email, gender) values (#{lastName}, #{email}, #{gender})
+	</insert>
+	
+	<insert id="addEmps" parameterType="java.util.List">
+		insert tb1_employee(lastName, email, gender, deptId, empStatus) values 
+		<foreach collection="emps" item="empItem" separator="," >
+			(#{empItem.lastName},#{empItem.email},#{empItem.gender},#{empItem.deptId},#{empItem.empStatus})
+		</foreach>
+	</insert>
+	
+	<update id="updateEmployee" parameterType="Employee">
+		update tb1_employee 
+		<set>
+			<if test="lastName != null">
+				lastName = #{lastName}
+			</if>
+			<if test="gender != null">
+				gender = #{gender}
+			</if>
+			<if test="email != null">
+				 email = #{email}
+			</if>
+			<if test="deptId != null">
+				deptId = #{deptId}
+			</if>
+		</set> 
+		 where id = #{id}
+	</update>
+
+	<delete id="delEmployee" parameterType="Employee">
+		delete from tb1_employee where id = #{id}
+	</delete>
+	
+	<delete id="delEmployee" parameterType="Employee">
+		<bind name="id" value="'_'id'%'"/>
+		<if	 test="_databseId = 'mysql'">
+			delete from tb1_employee where id = #{id}
+		</if>
+		<if	 test="_databseId = 'oracle'">
+			delete from EMPLOYEE where id = #{id}
+		</if>
+	</delete>
+	
+	<select id="callTest" statementType="CALLABLE">
+		{call callTest(
+				#{state, mode = IN, jdbcType = INTEGER}
+		)}
+	</select>
+</mapper>
